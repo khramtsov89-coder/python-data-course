@@ -6,18 +6,24 @@ analyzer.py — простой анализатор продаж без pandas.
 
 # 1. Читаем файл
 def read_sales(filepath):
-    """Читает текстовый файл и возвращает список словарей."""
     sales = []
-    with open(filepath, 'r', encoding='utf-8') as f:
-        for line in f:
-            # Убираем перенос строки и разбиваем по запятой
-            date, city, amount = line.strip().split(',')
-            # Превращаем сумму в число
-            sales.append({
-                'date': date,
-                'city': city,
-                'amount': int(amount)
-            })
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            for line_num, line in enumerate(f, 1):
+                try:
+                    date, city, amount_str = line.strip().split(',')
+                    amount = int(amount_str)  # Может упасть, если там текст
+                    sales.append({'date': date, 'city': city, 'amount': amount})
+                except ValueError:
+                    print(f" Пропущена строка {line_num}: неверный формат числа → '{line.strip()}'")
+                except Exception as e:
+                    print(f" Ошибка в строке {line_num}: {e}")
+    except FileNotFoundError:
+        print(f" Файл не найден: {filepath}")
+        return []
+    except Exception as e:
+        print(f" Ошибка чтения файла: {e}")
+        return []
     return sales
 
 # 2. Считаем статистику
@@ -34,7 +40,7 @@ def calculate_stats(sales):
 def save_report(total, by_city, output_path):
     """Записывает итоги в текстовый файл."""
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write("📊 ОТЧЁТ ПО ПРОДАЖАМ\n")
+        f.write(" ОТЧЁТ ПО ПРОДАЖАМ\n")
         f.write(f"Общая сумма: {total}\n")
         f.write("\nПо городам:\n")
         for city, amount in sorted(by_city.items()):
