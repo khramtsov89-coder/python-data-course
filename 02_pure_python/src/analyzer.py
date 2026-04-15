@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import csv
 import sys
 import argparse
 from pathlib import Path
@@ -44,6 +45,31 @@ def parse_args():
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Файл отчёта")
     return parser.parse_args()
 
+def read_messy_csv(filepath):
+    records = []
+    skipped = 0
+    with open(filepath, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for i, row in enumerate(reader, 1):
+            # Убираем пробелы из ключей и значений
+            clean_row = {k.strip(): v.strip() for k, v in row.items()}
+            amount_str = clean_row.get('amount', '').strip()
+            
+            try:
+                amount = float(amount_str)
+            except ValueError:
+                skipped += 1
+                print(f"⚠️ Строка {i}: пропущена (amount='{amount_str}')")
+                continue
+                
+            records.append({
+                'date': clean_row['date'],
+                'city': clean_row['city'],
+                'amount': amount,
+                'manager': clean_row.get('manager', 'Unknown')
+            })
+    print(f"📊 Загружено: {len(records)} | Пропущено: {skipped}")
+    return records
 if __name__ == '__main__':
     print(f"🔍 Запуск: {__file__}")
     args = parse_args()  # ← КРИТИЧЕСКИ ВАЖНО: здесь скрипт "слушает" консоль
@@ -53,7 +79,7 @@ if __name__ == '__main__':
     print(f"📂 Input: {input_path}")
     print(f"📁 Output: {output_path}")
     
-    data = read_sales(input_path)
+    data = read_messy_csv(input_path)
     total, stats = calculate_stats(data)
     save_report(total, stats, output_path)
     print(f"✅ Готово: {len(data)} записей, сумма {total}")
