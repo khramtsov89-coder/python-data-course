@@ -7,8 +7,8 @@ from pathlib import Path
 # Пути строятся от папки проекта, а не от папки src/
 SCRIPT_DIR = Path(__file__).resolve().parent  # .../02_pure_python/src/
 PROJECT_DIR = SCRIPT_DIR.parent               # .../02_pure_python/
-DEFAULT_INPUT = PROJECT_DIR / "data" / "sales.txt"
-DEFAULT_OUTPUT = PROJECT_DIR / "output" / "report.txt"
+DEFAULT_INPUT = PROJECT_DIR / "data" / "messy_sales.csv"
+DEFAULT_OUTPUT = PROJECT_DIR / "output" / "messy_report.txt"
 
 def read_sales(filepath):
     if not filepath.exists():
