@@ -38,18 +38,21 @@ def calculate_stats(sales):
 
     # Находим город с максимальной суммой
     top_city = max(by_city, key=by_city.get) if by_city else "Нет данных"
+    leader_share = (by_city[top_city] / total * 100) if total > 0 else 0.0
     
     # Возвращаем 4 значения вместо 2
-    return total, avg, by_city, top_city
+    return total, avg, by_city, top_city, leader_share
 
-def save_report(total, avg, by_city, top_city, output_path):
+def save_report(total, avg, by_city, top_city, n_managers, leader_share, output_path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write("📊 ОТЧЁТ ПО ПРОДАЖАМ\n")
         f.write(f"Общая сумма: {total:.0f}\n")
         f.write(f"Средний чек: {avg:.1f}\n")
         f.write(f"Лидер по выручке: {top_city}\n\n")
+        f.write(f"Доля лидера: {leader_share:.1f}%\n")
         f.write("Детализация по городам (по убыванию):\n")
+        f.write(f"Лидер: {top_city} | 👥 Менеджеров: {n_managers}\n\n")
         # Сортируем города от большего к меньшему
         sorted_cities = sorted(by_city.items(), key=lambda x: x[1], reverse=True)
         for city, amount in sorted_cities:
@@ -86,6 +89,17 @@ def read_messy_csv(filepath):
             })
     print(f"📊 Загружено: {len(records)} | Пропущено: {skipped}")
     return records
+
+def count_managers(sales):
+    # sales — это тот же список словарей, который вернул read_messy_csv()
+    managers = set()  # set автоматически хранит только уникальные значения
+    
+    for item in sales:
+        manager = item.get('manager', 'Unknown')
+        managers.add(manager)  # 👈 Задание 1: добавьте имя менеджера в множество managers
+        
+    return len(managers)  # 👈 Задание 2: верните количество уникальных менеджеров
+
 if __name__ == '__main__':
     print(f"🔍 Запуск: {__file__}")
     args = parse_args()  # ← КРИТИЧЕСКИ ВАЖНО: здесь скрипт "слушает" консоль
@@ -96,6 +110,7 @@ if __name__ == '__main__':
     print(f"📁 Output: {output_path}")
     
     data = read_messy_csv(input_path)
-    total, avg, by_city, top_city = calculate_stats(data)  # распаковка 4 значений
-    save_report(total, avg, by_city, top_city, output_path)
+    total, avg, by_city, top_city, leader_share = calculate_stats(data)  # распаковка 4 значений
+    n_managers = count_managers(data)
+    save_report(total, avg, by_city, top_city, n_managers, leader_share, output_path)
     print(f"✅ Готово: {len(data)} записей, сумма {total}")
