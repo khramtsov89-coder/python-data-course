@@ -26,18 +26,34 @@ def read_sales(filepath):
 
 def calculate_stats(sales):
     total = sum(item['amount'] for item in sales)
+    count = len(sales)
+    # Защита от деления на ноль: если данных нет, avg = 0
+    avg = total / count if count > 0 else 0  
+
+    # Группируем суммы по городам
     by_city = {}
     for item in sales:
-        by_city[item['city']] = by_city.get(item['city'], 0) + item['amount']
-    return total, by_city
+        city = item['city']
+        by_city[city] = by_city.get(city, 0) + item['amount']
 
-def save_report(total, by_city, output_path):
+    # Находим город с максимальной суммой
+    top_city = max(by_city, key=by_city.get) if by_city else "Нет данных"
+    
+    # Возвращаем 4 значения вместо 2
+    return total, avg, by_city, top_city
+
+def save_report(total, avg, by_city, top_city, output_path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write("📊 ОТЧЁТ ПО ПРОДАЖАМ\n")
-        f.write(f"Общая сумма: {total}\n\nПо городам:\n")
-        for city, amount in sorted(by_city.items()):
-            f.write(f"  {city}: {amount}\n")
+        f.write(f"Общая сумма: {total:.0f}\n")
+        f.write(f"Средний чек: {avg:.1f}\n")
+        f.write(f"Лидер по выручке: {top_city}\n\n")
+        f.write("Детализация по городам (по убыванию):\n")
+        # Сортируем города от большего к меньшему
+        sorted_cities = sorted(by_city.items(), key=lambda x: x[1], reverse=True)
+        for city, amount in sorted_cities:
+            f.write(f"  {city}: {amount:.0f}\n")
 
 def parse_args():
     parser = argparse.ArgumentParser(description="📊 Анализатор продаж")
@@ -51,7 +67,7 @@ def read_messy_csv(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for i, row in enumerate(reader, 1):
-            # Убираем пробелы из ключей и значений
+            # Убираем пробелы из ключей и значений # clean_row = {k.strip(): v.strip() for k, v in row.items()}
             clean_row = {k.strip(): v.strip() for k, v in row.items()}
             amount_str = clean_row.get('amount', '').strip()
             
@@ -80,6 +96,6 @@ if __name__ == '__main__':
     print(f"📁 Output: {output_path}")
     
     data = read_messy_csv(input_path)
-    total, stats = calculate_stats(data)
-    save_report(total, stats, output_path)
+    total, avg, by_city, top_city = calculate_stats(data)  # распаковка 4 значений
+    save_report(total, avg, by_city, top_city, output_path)
     print(f"✅ Готово: {len(data)} записей, сумма {total}")
